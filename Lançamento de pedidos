@@ -1,0 +1,141 @@
+import pandas as pd
+from selenium import webdriver
+from selenium.webdriver.common.keys import Keys
+import time
+
+try:
+    """-----------------tratamento do arquivo---------------------------------------------------"""
+    aux3 = str(input('Cole o caminho do arquivo aqui:'))
+    aux4 = str(input('Cole o nome do arquivo aqui:'))
+    caminho = aux3.replace('\\', '/')
+    caminho += '/' + aux4 + '.xlsx'
+
+    df = pd.read_excel(caminho, sheet_name='B - CER', usecols=[3, 15], skiprows=42)
+
+    df2 = pd.read_excel(caminho, sheet_name='B - CER', usecols=[3], skiprows=2)
+    df2 = df2.fillna(0).astype(str)
+
+    df2 = df2.rename(columns={'Unnamed: 3': 'nome'})
+    nome_cliente = df2.loc[0]
+
+    df = df.fillna(0).astype(str)
+
+    df_mask = df['CÓDIGO'] != 'CÓDIGO'
+    table = df[df_mask]
+
+    filtro = table['QUANTIDADE'] != '0'
+    tabela = table[filtro]
+
+    lista = []
+    j = 0
+    while j < len(tabela):
+        lista.append(j)
+        j = j + 1
+    tabela.index = lista
+
+    tabela.head(20)
+
+    df_mask = df['CÓDIGO'] != 'CÓDIGO'
+    table = df[df_mask]
+
+    filtro = table['QUANTIDADE'] != '0'
+    tabela = table[filtro]
+
+    lista = []
+    j = 0
+    while j < len(tabela):
+        lista.append(j)
+        j = j + 1
+    tabela.index = lista
+    print(tabela)
+
+    """#---------------------entrada de dados------------------------------------
+    """
+
+    print('Para prosseguir vou precisar de algumas informações.'
+          'Caso não tenha alguma informação precione a tecla "espaço" e a tecla "enter"')
+
+    login_name = input('Seu login no Bling:')
+    login_senha = input('Sua senha no Bling:')
+
+    name = input('\nAos cuidados de: ')
+
+    seller_name = input('\nNome do vendedor: ')
+
+    print('\nForneça uma introdução da venda(opicional), para encerrar a introdução basta pular 2 linhas')
+    INPUT = ''
+    x = input()
+    while x != '':
+        INPUT += (x + '\n')
+        x = input()
+
+    "-----------------------------------------Parte de Automação---------------------------"
+    # abrir o bling
+    drive = webdriver.Chrome()
+    drive.get('https://www.bling.com.br/orcamentos.php#list')
+
+    # LOGIN
+    login = drive.find_element_by_xpath('//*[@id="username"]')
+    login.send_keys(login_name)
+
+    senha = drive.find_element_by_xpath('//*[@id="senha"]')
+    senha.send_keys(login_senha)
+
+    time.sleep(1)
+    drive.find_element_by_xpath('//*[@id="login-buttons-site"]/button').click()
+
+    # entrar na área que cadastra as vendas
+    time.sleep(3)
+    action = drive.find_element_by_xpath('//*[@id="menu-novo"]/ul[1]/li[4]/a').click()
+
+    action2 = drive.find_element_by_xpath('//*[@id="menu-novo"]/ul[1]/li[4]/ul/li[5]/a').click()
+
+    time.sleep(1)
+    drive.find_element_by_xpath('//*[@id="container"]/div[3]/div[1]/button').click()
+
+    # fazendo cadastro cliente
+
+    # SELECIONA O NOME DO CLIENTE
+    cliente = drive.find_element_by_xpath('//*[@id="contato"]')
+    cliente.send_keys(nome_cliente, Keys.ARROW_DOWN, Keys.ENTER)
+    time.sleep(1)
+
+    # SELECIONA A OPÇÃO RESPONSAVEL PELA VENDA
+    aos_cuidados_de = drive.find_element_by_xpath('//*[@id="contato_ac"]')
+    aos_cuidados_de.send_keys(name)
+    time.sleep(1)
+
+    # NOME DO VENDEDOR
+    vendedor = drive.find_element_by_xpath('//*[@id="nomeVendedor"]')
+    vendedor.send_keys(seller_name, Keys.ARROW_DOWN, Keys.ENTER)
+    time.sleep(1)
+
+    # INTRODUÇÃO DA VENDA
+    introducao = drive.find_element_by_xpath('//*[@id="introducao"]')
+    introducao.send_keys(INPUT)
+    time.sleep(1)
+
+    count = 400
+
+    for i, aux in enumerate(tabela['QUANTIDADE']):
+        cod = tabela.loc[i, 'CÓDIGO']
+        key = drive.find_element_by_xpath('//*[@id="produto"]')
+        key.send_keys(cod, Keys.ENTER)
+        time.sleep(1)
+
+        chave_qtd = drive.find_element_by_xpath('//*[@id="quantidade"]')
+        time.sleep(2)
+        chave_qtd.send_keys(aux, Keys.ENTER)
+        time.sleep(3)
+        texto = f"window.scrollTo(0, {count})"
+        drive.execute_script(texto)
+        count += 50
+        time.sleep(2)
+        novo_item = drive.find_element_by_xpath('//*[@id="aNovaLinhaItem"]').click()
+
+    time.sleep(5)
+    print('Sucesso')
+    drive.find_element_by_xpath('//*[@id="botaoSalvar"]').click()
+
+except Exception as e:
+    print(str(e))
